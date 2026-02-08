@@ -7,6 +7,8 @@ import { sepolia } from "viem/chains";
 import { createPublicClient, createWalletClient, http, parseAbi, parseUnits } from "viem";
 import { API_CONFIG } from '../config/api';
 
+import { yellowService } from './yellowService.js';
+
 // Initialize Groq AI
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
 const groq = new Groq({
@@ -25,7 +27,7 @@ let publicClient = null; // For reading blockchain state
 const toolDataMap = new Map();
 
 
-export const initializePaymentFetch = (privateKey) => {
+export const initializePaymentFetch = async (privateKey) => {
     try {
         // Ensure private key starts with 0x
         if (!privateKey.startsWith('0x')) {
@@ -71,7 +73,17 @@ export const initializePaymentFetch = (privateKey) => {
             ]
         });
 
-        console.log('x402 EVM payment client initialized successfully for Ethereum Sepolia');
+
+        // Initialize Yellow Network Service (REAL SDK!)
+        const yellowInitSuccess = await yellowService.initialize(privateKey);
+
+        if (yellowInitSuccess) {
+            console.log('✅ Yellow Network SDK (Erc20Service) initialized successfully!');
+        } else {
+            console.warn('[Yellow] Service failed to initialize. Payments will default to EVM.');
+        }
+
+        console.log('x402 EVM payment client initialized successfully for Ethereum Network');
         console.log('Wallet address:', account.address);
         return true;
     } catch (error) {
@@ -139,8 +151,8 @@ export const fetchMarketplaceTools = async () => {
 
         // Transform to Groq function format
         const functionDeclarations = tools.map(tool => {
-            // Extract price from description (e.g., "COSTS: 4 XLM per call" or "COSTS: 0.04 USDC")
-            const priceMatch = tool.description?.match(/COSTS?:\s*(\d+(?:\.\d+)?)\s*(?:XLM|USDC)/i);
+            // Extract price from description (e.g., "COSTS: 0.04 USDC")
+            const priceMatch = tool.description?.match(/COSTS?:\s*(\d+(?:\.\d+)?)\s*USDC/i);
             const extractedPrice = priceMatch ? parseFloat(priceMatch[1]) : 0.00;
 
             // Store original tool data with extracted price
@@ -205,29 +217,55 @@ export const callPaidTool = async (toolName, args) => {
             const paymentInfo = await response.json();
             console.log('Payment info:', paymentInfo);
 
-            // Execute Real Transaction using viem
-            console.log('Executing Access Transaction on Ethereum Sepolia...');
-            const amount = parseUnits(paymentInfo.price.toString(), 6); // Assume standard 6 decimals for USDC
+            // Execute Yellow Network Payment via NitroLite
+            // Only attempt if initialized
+            let txHash;
+            let yellowSuccess = false;
 
-            // Send transaction
-            const txHash = await walletClient.writeContract({
-                address: paymentInfo.asset, // USDC Address
-                abi: parseAbi(['function transfer(address to, uint256 amount) returns (bool)']),
-                functionName: 'transfer',
-                args: [paymentInfo.payTo, amount]
-            });
+            // Check if service is initialized before attempting usage
+            if (yellowService.isInitialized) {
+                console.log('Executing Access Payment on Yellow Network (NitroLite)...');
+                try {
+                    const paymentResult = await yellowService.pay(
+                        paymentInfo.payTo,
+                        paymentInfo.price.toString(),
+                        'USDC'
+                    );
 
-            console.log('Transaction sent! Hash:', txHash);
-            console.log('Waiting for confirmation...');
+                    if (paymentResult && (paymentResult.id || paymentResult.signature)) {
+                        console.log("Yellow payment successful");
+                        txHash = paymentResult.id || paymentResult.signature;
+                        yellowSuccess = true;
+                    }
+                } catch (err) {
+                    console.error("Yellow payment failed:", err.message);
+                    // Fallback to EVM below
+                }
+            } else {
+                console.warn("Yellow Service not initialized. Skipping.");
+            }
 
-            // Wait for transaction to be mined
-            const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-            console.log('Transaction confirmed in block:', receipt.blockNumber);
+            // Fallback to EVM if Yellow failed or wasn't available
+            if (!yellowSuccess) {
+                console.log('Falling back to Standard EVM Access Transaction...');
+                const amount = parseUnits(paymentInfo.price.toString(), 6);
 
-            // Construct Proof Header with Real Transaction Hash
+                txHash = await walletClient.writeContract({
+                    address: paymentInfo.asset,
+                    abi: parseAbi(['function transfer(address to, uint256 amount) returns (bool)']),
+                    functionName: 'transfer',
+                    args: [paymentInfo.payTo, amount]
+                });
+
+                console.log('EVM Transaction sent! Hash:', txHash);
+                const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+                console.log('EVM Transaction confirmed:', receipt.blockNumber);
+            }
+
+            // Construct Proof Header
             const paymentProof = JSON.stringify({
                 txHash: txHash,
-                network: paymentInfo.network || 'sepolia',
+                network: yellowSuccess ? (paymentInfo.network || 'yellow-testnet') : 'ethereum-network',
                 from: walletAddress,
                 timestamp: Date.now()
             });

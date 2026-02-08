@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import Button from '../components/Button';
 import GlassCard from '../components/GlassCard';
 import StatusPill from '../components/StatusPill';
-import { formatXLM } from '../utils/payment';
+import { formatUSDC } from '../utils/payment';
 import {
     initializePaymentFetch,
     fetchMarketplaceTools,
     processQueryWithGroq
 } from '../services/groqService';
+import { yellowService } from '../services/yellowService';
 import envConfig from '../config/env';
 import './AgentInterface.css';
 
@@ -26,8 +27,14 @@ const AgentInterface = () => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [expandedResponses, setExpandedResponses] = useState(new Set());
     const [audioBlobs, setAudioBlobs] = useState({});
+    const [conversations, setConversations] = useState([]);
+    const [currentConversationId, setCurrentConversationId] = useState(null);
+    const [showHistory, setShowHistory] = useState(true);
+    const [yellowBalance, setYellowBalance] = useState('0.00');
+    const [lastPayment, setLastPayment] = useState(null);
     const messagesEndRef = useRef(null);
     const messageIdRef = useRef(1);
+    const conversationIdRef = useRef(1);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -83,6 +90,27 @@ const AgentInterface = () => {
         initialize();
     }, []);
 
+    // Listen to Yellow balance updates
+    useEffect(() => {
+        const handleBalanceUpdate = (event, balance) => {
+            if (event === 'balance_update') {
+                console.log('[AgentInterface] Balance updated:', balance);
+                setYellowBalance(balance);
+            } else if (event === 'payment_success') {
+                setLastPayment(balance); // In this event, 'balance' is actually the payment metadata object
+                setTimeout(() => setLastPayment(null), 3000);
+            }
+        };
+
+        yellowService.addListener(handleBalanceUpdate);
+
+        // Get initial balance if service is already initialized
+        if (yellowService.isInitialized) {
+            setYellowBalance(yellowService.balance);
+        }
+    }, []);
+
+
 
     const addMessage = (type, content, extra = {}) => {
         const messageId = `msg-${messageIdRef.current++}`;
@@ -95,6 +123,64 @@ const AgentInterface = () => {
         }]);
         return messageId;
     };
+
+    const saveCurrentConversation = () => {
+        if (messages.length <= 1) return; // Don't save if only welcome message
+
+        const title = messages.find(m => m.type === 'user')?.content.substring(0, 50) || 'New Chat';
+
+        setConversations(prev => {
+            if (currentConversationId) {
+                // Update existing conversation
+                return prev.map(conv =>
+                    conv.id === currentConversationId
+                        ? { ...conv, messages: [...messages], updatedAt: new Date(), title }
+                        : conv
+                );
+            } else {
+                // Create new conversation
+                const newConv = {
+                    id: `conv-${conversationIdRef.current++}`,
+                    title,
+                    messages: [...messages],
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                setCurrentConversationId(newConv.id);
+                return [newConv, ...prev];
+            }
+        });
+    };
+
+    const startNewChat = () => {
+        saveCurrentConversation();
+        setMessages([{
+            type: 'system',
+            content: 'Welcome to AgentPay with AI!',
+            timestamp: new Date(),
+            id: 'msg-0'
+        }]);
+        setCurrentConversationId(null);
+        messageIdRef.current = 1;
+    };
+
+    const loadConversation = (conversationId) => {
+        const conversation = conversations.find(c => c.id === conversationId);
+        if (conversation) {
+            setMessages(conversation.messages);
+            setCurrentConversationId(conversationId);
+        }
+    };
+
+    // Save conversation when messages change
+    useEffect(() => {
+        if (messages.length > 1) {
+            const timeoutId = setTimeout(() => {
+                saveCurrentConversation();
+            }, 1000); // Debounce saves
+            return () => clearTimeout(timeoutId);
+        }
+    }, [messages]);
 
     const generateAudio = async (text, messageId) => {
         try {
@@ -222,8 +308,52 @@ const AgentInterface = () => {
     };
 
     return (
-        <div className="agent-interface simplified">
-            <main className="chat-area-full">
+        <div className="agent-interface">
+            {/* History Sidebar */}
+            <aside className={`history-sidebar ${showHistory ? 'show' : ''}`}>
+                <button className="new-chat-btn" onClick={startNewChat}>
+                    + NEW CHAT
+                </button>
+
+                <div className="conversation-list">
+                    {conversations.map(conv => (
+                        <div
+                            key={conv.id}
+                            className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
+                            onClick={() => loadConversation(conv.id)}
+                        >
+                            <div className="conversation-title">{conv.title}</div>
+                            <div className="conversation-date">
+                                {new Date(conv.updatedAt).toLocaleDateString()}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="sidebar-footer">
+                    <div className="yellow-balance-card">
+                        {lastPayment && (
+                            <div className="payment-deduction">
+                                -{lastPayment.amount} USDC
+                            </div>
+                        )}
+                        <div className="balance-label">YELLOW BALANCE</div>
+                        <div className="balance-amount">{yellowBalance} USDC</div>
+                        <div className="balance-network">Ethereum Network</div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Chat Area */}
+            <main className="chat-area">
+                <div className="chat-header">
+                    <button className="back-btn" onClick={() => setShowHistory(!showHistory)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                    </button>
+                </div>
+
                 <div className="messages-container">
                     {messages.map((message) => (
                         <div key={message.id} className={`message message-${message.type}`}>
@@ -242,7 +372,7 @@ const AgentInterface = () => {
                                     <div>
                                         <div className="agent-label">
                                             {message.agent}
-                                            {message.cost > 0 && ` • Cost: ${formatXLM(message.cost)}`}
+                                            {message.cost > 0 && ` • Cost: ${formatUSDC(message.cost)}`}
                                         </div>
                                         <div className="message-text">
                                             {message.content.split('\n').map((line, i) => (
@@ -300,7 +430,7 @@ const AgentInterface = () => {
                                             <p className="payment-details">
                                                 Tool: <strong>{message.toolName}</strong> {message.agentIcon}
                                                 <br />
-                                                Amount: <strong>{formatXLM(message.amount)}</strong>
+                                                Amount: <strong>{formatUSDC(message.amount)}</strong>
                                             </p>
                                         </div>
                                         <StatusPill status="pending" text="Processing Payment..." />
@@ -320,7 +450,7 @@ const AgentInterface = () => {
                                             </div>
                                             <h4>Payment Confirmed</h4>
                                             <p className="payment-details">
-                                                Transaction verified on Ethereum Sepolia
+                                                Transaction verified on Ethereum Network
                                                 <br />
                                                 <span className="tx-hash">{message.txHash}</span>
                                             </p>
@@ -403,7 +533,7 @@ const AgentInterface = () => {
                                 onClick={handleSendMessage}
                                 disabled={!inputValue.trim() || isProcessing || !isInitialized}
                             >
-                                {isProcessing ? 'Processing...' : 'Send'}
+                                {isProcessing ? 'Processing...' : 'SEND'}
                             </Button>
                         </div>
                     </div>

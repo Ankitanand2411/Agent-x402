@@ -1,158 +1,132 @@
+/* Navigation - Exact Stellar Design */
+
 .navigation {
+    background: #fff;
+    border-bottom: 2px solid #000;
+    padding: 1.25rem 0;
     position: sticky;
     top: 0;
-    z-index: var(--z-sticky);
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border-bottom: 1px solid var(--glass-border);
-    padding: var(--space-md) 0;
+    z-index: 100;
 }
 
 .nav-container {
-    max-width: 1440px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 var(--space-xl);
+    padding: 0 3rem;
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: var(--space-xl);
-}
-
-/* Logo */
-.nav-logo {
-    display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    text-decoration: none;
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-extrabold);
-    transition: all var(--transition-base);
-    position: absolute;
-    left: var(--space-xl);
-}
-
-.logo-icon {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    background: transparent;
-    transition: all var(--transition-base);
-}
-
-.logo-text {
-    color: var(--text-primary);
-}
-
-.logo-accent {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.nav-logo:hover {
-    transform: scale(1.05);
-}
-
-.nav-logo:hover .logo-icon {
-    transform: rotate(5deg);
-}
-
-/* Nav Links */
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xl);
-}
-
-.nav-link {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-base);
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-md);
-    transition: all var(--transition-base);
     position: relative;
 }
 
-.nav-link::after {
-    content: '';
+.nav-logo {
     position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 2px;
-    background: var(--gradient-primary);
-    transition: width var(--transition-base);
+    left: 3rem;
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.logo-icon {
+    width: 28px;
+    height: 28px;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.nav-links {
+    display: flex;
+    gap: 0;
+    align-items: center;
+}
+
+.nav-link {
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #000;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
 }
 
 .nav-link:hover {
-    color: #E0E0E0;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.nav-link:hover::after {
-    width: 80%;
+    background: #f5f5f5;
 }
 
 .nav-link.active {
-    color: #E0E0E0;
+    background: #000;
+    color: #fff;
 }
 
-.nav-link.active::after {
-    width: 80%;
-}
-
-/* Wallet Button */
-.nav-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-}
-
-.wallet-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) var(--space-lg);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    color: var(--text-primary);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-sm);
+/* Mobile Menu */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: 2px solid #000;
+    padding: 0.5rem;
     cursor: pointer;
-    transition: all var(--transition-base);
+    width: 40px;
+    height: 40px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
 }
 
-.wallet-btn:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+.menu-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #000;
 }
 
-.wallet-icon {
-    font-size: var(--font-size-lg);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
     .nav-container {
-        padding: 0 var(--space-md);
+        justify-content: space-between;
+    }
+
+    .nav-logo {
+        position: static;
+    }
+
+    .menu-toggle {
+        display: flex;
     }
 
     .nav-links {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border-bottom: 2px solid #000;
+        flex-direction: column;
+        gap: 0;
         display: none;
     }
 
-    .wallet-text {
-        display: none;
+    .nav-links.open {
+        display: flex;
     }
 
-    .wallet-btn {
-        padding: var(--space-sm);
+    .nav-link {
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 1rem;
     }
 }

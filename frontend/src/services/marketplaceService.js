@@ -40,10 +40,9 @@ const transformToolsToAgents = (tools) => {
 
 
 const transformToolToAgent = (tool) => {
-    // Extract price from description (e.g., "COSTS: 0.01 USDC per call" or "COSTS: 4 XLM per call")
+    // Extract price from description (e.g., "COSTS: 0.01 USDC per call")
     const usdcMatch = tool.description?.match(/COSTS?:\s*(\d+(?:\.\d+)?)\s*USDC/i);
-    const xlmMatch = tool.description?.match(/COSTS?:\s*(\d+(?:\.\d+)?)\s*XLM/i);
-    const extractedPrice = usdcMatch ? parseFloat(usdcMatch[1]) : (xlmMatch ? parseFloat(xlmMatch[1]) : 0.01);
+    const extractedPrice = usdcMatch ? parseFloat(usdcMatch[1]) : 0.01;
 
     // Determine category from tool name or description
     const category = determineCategoryFromTool(tool);

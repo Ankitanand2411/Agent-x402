@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import { fetchTools, extractCategories } from '../services/marketplaceService';
-import { formatXLM } from '../utils/payment';
+import { formatUSDC } from '../utils/payment';
 import './Marketplace.css';
 
 const Marketplace = () => {
@@ -163,11 +163,11 @@ const Marketplace = () => {
                                 <div className="pricing-info">
                                     <div className="price-item">
                                         <span className="price-label">Price per call:</span>
-                                        <span className="price-amount">{formatXLM(selectedAgent.price)}</span>
+                                        <span className="price-amount">{formatUSDC(selectedAgent.price)}</span>
                                     </div>
                                     <div className="price-item">
                                         <span className="price-label">Payment method:</span>
-                                        <span className="payment-method">Base Sepolia x402</span>
+                                        <span className="payment-method">Ethereum Network x402</span>
                                     </div>
                                 </div>
                             </section>
