@@ -28,111 +28,56 @@ Most AI agents hit a wall when they need paid data (weather, stocks, detailed se
 
 ---
 
-## 📐 Complete Payment Flow Architecture
+## 📐 System Architecture & Payment Flow
 
-### Initialization Flow
-
-When the app loads:
-1. **EVM Wallet** initialized with `viem` and `x402-evm`
-2. **Yellow Network SDK** initialized:
-   ```javascript
-   // frontend/src/services/yellowService.js
-   import { Erc20Service } from '@erc7824/nitrolite';
-   
-   this.erc20Service = new Erc20Service(publicClient, walletClient);
-   const balance = await this.erc20Service.getTokenBalance(USDC_ADDRESS, account);
-   ```
-3. **Real USDC Balance** fetched from Sepolia blockchain
-4. **UI Updated** with live balance
-
-### Payment Execution Flow
+This diagram illustrates how **Agentx402** handles the autonomous "402 Payment Required" loop, prioritizing the **Yellow Network** for instant settlement.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant AI as Groq AI
-    participant App as AgentPay
-    participant YellowSDK as Yellow Network SDK
-    participant Market as Marketplace
-    participant USDC as USDC Contract
-    
-    User->>AI: "What's weather in London?"
-    AI->>App: Tool: get_weather
-    App->>Market: GET /tools/get_weather
-    Market-->>App: 402 Payment Required (0.04 USDC)
-    
-    App->>YellowSDK: getAllowance(provider)
-    YellowSDK->>USDC: Read allowance
-    USDC-->>YellowSDK: Current allowance
-    
-    alt Insufficient Allowance
-        App->>YellowSDK: approve(provider, amount)
-        YellowSDK->>USDC: approve() tx
-        USDC-->>YellowSDK: Tx hash
-    end
-    
-    App->>USDC: transfer(provider, 0.04 USDC)
-    USDC-->>App: Tx hash
-    
-    App->>YellowSDK: updateBalance()
-    YellowSDK->>USDC: getTokenBalance()
-    USDC-->>YellowSDK: New balance
-    
-    App->>Market: Retry + x-402-payment header
-    Market-->>App: 200 OK + Weather data
-    App->>AI: Tool response
-    AI-->>User: "It's raining in London..."
-```
-
-### Yellow Network SDK Integration Points
-
-| Operation | SDK Method | Purpose |
-|-----------|-----------|---------|
-| **Balance Check** | `erc20Service.getTokenBalance()` | Fetch real USDC balance from blockchain |
-| **Allowance Check** | `erc20Service.getTokenAllowance()` | Verify provider can spend tokens |
-| **Approve Tokens** | `erc20Service.approve()` | Grant spending permission |
-
-**Proof of Real SDK Usage**:
-- Package: `@erc7824/nitrolite` v0.5.3 (verified in [package.json](file:///home/ankitanand2411/Agentx402/frontend/package.json))
-- Import: `import { Erc20Service } from '@erc7824/nitrolite';` (line 2 of [yellowService.js](file:///home/ankitanand2411/Agentx402/frontend/src/services/yellowService.js#L2))
-- Source: `node_modules/@erc7824/nitrolite/dist/client/services/Erc20Service.js`
-
----
-
-
-## 📐 Architecture Diagram
-
-```mermaid
-sequenceDiagram
+    autonumber
     participant User
     participant Agent as Agent (Groq LLM)
-    participant Service as Frontend (GroqService)
+    participant App as Frontend (React)
     participant Yellow as Yellow Network (NitroLite)
-    participant EVM as EVM (Sepolia)
     participant Market as Backend (Marketplace)
 
     User->>Agent: "Check weather in London"
-    Agent->>Service: Select Tool: get_weather
-    Service->>Market: POST /tools/get_weather
-    Market-->>Service: 402 Payment Required (Price: 0.04 USDC)
+    Agent->>App: Select Tool: get_weather
+    App->>Market: POST /tools/get_weather
+    Market-->>App: 402 Payment Required (Price: 0.04 USDC)
     
-    rect rgb(255, 255, 224)
-        note over Service, Yellow: Payment Attempt
-        Service->>Yellow: 1. Try Yellow Payment (Off-Chain)
-        alt Yellow Success
-            Yellow-->>Service: Payment Signature (Instant)
-        else Yellow Failure
-            Service->>EVM: 2. Fallback to EVM Transaction (On-Chain)
-            EVM-->>Service: Transaction Hash (Slow)
-        end
+    Note over App, Yellow: Autonomous Payment Logic
+    App->>Yellow: 1. Try Yellow Payment (Off-Chain)
+    alt Yellow Success
+        Yellow-->>App: Payment Signature (Instant)
+    else Yellow Failure
+        App->>App: 2. Fallback to EVM Transaction (On-Chain)
+        Note right of App: Standard viem transfer
     end
 
-    Service->>Market: Retry POST /tools/get_weather + x-402-payment header
+    App->>Market: Retry POST /tools/get_weather + x-402-payment header
     Market->>Market: Verify Payment Proof
-    Market-->>Service: 200 OK + Weather Data
-    Service-->>Agent: Tool Response
+    Market-->>App: 200 OK + Weather Data
+    App-->>Agent: Tool Response
     Agent-->>User: "It's raining in London..."
 ```
+
+### 🛠 Yellow Network SDK Integration
+The application uses the **NitroLite SDK** to bridge AI agents with high-speed decentralized payments.
+
+| Operation | SDK Method | Purpose |
+|-----------|-----------|---------|
+| **Balance Sync** | `erc20Service.getTokenBalance()` | Fetch real-time USDC balance |
+| **Allowance** | `erc20Service.getTokenAllowance()` | Check if provider is authorized |
+| **Approval** | `erc20Service.approve()` | Grant tool spending permissions |
+| **Execution** | `erc20Service.pay()` | Settle off-chain state channel payment |
+
+**Proof of Real SDK Usage**:
+*   **Package**: `@erc7824/nitrolite` v0.5.3
+*   **Import**: `import { Erc20Service } from '@erc7824/nitrolite';`
+*   **Implementation**: Real blockchain calls via `viem` integration.
+
+---
 
 ## 🏗 System Architecture
 
