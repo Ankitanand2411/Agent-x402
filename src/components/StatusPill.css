@@ -1,0 +1,64 @@
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-mono);
+    border: 1px solid;
+    transition: all var(--transition-base);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Pending - Medium Gray */
+.status-pending {
+    background: rgba(136, 136, 136, 0.1);
+    border-color: rgba(136, 136, 136, 0.3);
+    color: #888888;
+}
+
+.status-pending .status-dot {
+    background: #888888;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Success - White */
+.status-success {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #E0E0E0;
+}
+
+.status-success .status-dot {
+    background: #E0E0E0;
+}
+
+/* Failed - Dark Gray */
+.status-failed {
+    background: rgba(68, 68, 68, 0.1);
+    border-color: rgba(68, 68, 68, 0.3);
+    color: #444444;
+}
+
+.status-failed .status-dot {
+    background: #444444;
+}
+
+/* Confirmed - Light Gray */
+.status-confirmed {
+    background: rgba(204, 204, 204, 0.1);
+    border-color: rgba(204, 204, 204, 0.3);
+    color: #cccccc;
+}
+
+.status-confirmed .status-dot {
+    background: #cccccc;
+}
