@@ -187,7 +187,7 @@ export const fetchMarketplaceTools = async () => {
 
 
 export const callPaidTool = async (toolName, args) => {
-    const SERVER_URL = "http://localhost:3000";
+    const SERVER_URL = "https://agent-x40agent-x402-backend.onrender.com";
 
 
 

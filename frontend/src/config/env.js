@@ -7,7 +7,7 @@ export default {
     EVM_PRIVATE_KEY: import.meta.env.VITE_EVM_PRIVATE_KEY || '',
 
     // Marketplace backend URL
-    MARKETPLACE_URL: import.meta.env.VITE_MARKETPLACE_URL || 'http://localhost:3000',
+    MARKETPLACE_URL: import.meta.env.VITE_MARKETPLACE_URL || 'https://agent-x40agent-x402-backend.onrender.com',
 
     // Backend URL for tools and audio generation
     //BACKEND_URL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000',

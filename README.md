@@ -139,7 +139,7 @@ Start the tool marketplace server:
 ```bash
 node market-evm.js
 ```
-*Runs on `http://localhost:3000`*
+*Runs on `https://agent-x40agent-x402-backend.onrender.com`*
 
 ### 2. Frontend Setup
 1.  Navigate to `frontend/`:

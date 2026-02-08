@@ -55,7 +55,7 @@ VITE_GROQ_API_KEY=your_groq_api_key
 VITE_EVM_PRIVATE_KEY=your_private_key_here
 
 # Backend URL
-VITE_MARKETPLACE_URL=http://localhost:3000
+VITE_MARKETPLACE_URL=https://agent-x40agent-x402-backend.onrender.com
 ```
 
 ### 3. Setup Backend
