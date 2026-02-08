@@ -1,0 +1,31 @@
+{
+    "name": "marketplace-backend-evm",
+    "version": "2.0.0",
+    "description": "x402 Marketplace Backend with EVM/Base Sepolia Support",
+    "main": "market-evm.js",
+    "type": "module",
+    "scripts": {
+        "start": "node market-evm.js",
+        "dev": "node market-evm.js"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.21.0",
+        "x402-express": "^1.1.0",
+        "@x402/evm": "^2.3.0",
+        "cors": "^2.8.6",
+        "dotenv": "^17.2.3",
+        "express": "^5.2.1",
+        "groq-sdk": "^0.37.0",
+        "node-fetch": "^3.3.2",
+        "viem": "^2.0.0"
+    },
+    "keywords": [
+        "x402",
+        "evm",
+        "base-sepolia",
+        "payments",
+        "marketplace"
+    ],
+    "author": "",
+    "license": "ISC"
+}

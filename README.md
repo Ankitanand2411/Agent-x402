@@ -1,9 +1,9 @@
-# Agentx402: Autonomous AI Agent with Real Micro-Payments
+# AgentPay: Autonomous AI Agent with Real Micro-Payments
 
 An autonomous AI agent that can browse a marketplace, select paid tools (APIs), and independently purchase access using cryptocurrency. It leverages the **Yellow Network (NitroLite SDK)** for instant, off-chain payments, with a seamless fallback to standard on-chain EVM transactions.
 
 ## 🚀 The Core Concept: "Pay-Per-Use" AI Tools
-Most AI agents hit a wall when they need paid data (weather, stocks, detailed search). **Agentx402** solves this by giving the AI a wallet and the ability to negotiate payments autonomously using the HTTP `402 Payment Required` status code.
+Most AI agents hit a wall when they need paid data (weather, stocks, detailed search). **AgentPay** solves this by giving the AI a wallet and the ability to negotiate payments autonomously using the HTTP `402 Payment Required` status code.
 
 ### The Protocol Flow (How it works under the hood)
 1.  **AI Request**: The Agent (Groq LLM) decides it needs a tool (e.g., `get_weather`) and sends a standard `POST` request to the backend.
@@ -13,7 +13,7 @@ Most AI agents hit a wall when they need paid data (weather, stocks, detailed se
     *   `asset`: The token contract address (USDC).
 3.  **Agent Payment**: The frontend service (`groqService.js`) catches the 402 error and automatically handles the transaction:
     *   **Priority**: Attempts to pay via **Yellow Network** (State Channel) for instant, gas-free settlement.
-    *   **Fallback**: If Yellow fails (e.g., channel not open), it falls back to a standard **EVM Blockchain Transaction** (Sepolia).
+    *   **Fallback**: If Yellow fails (e.g., channel not open), it falls back to a standard **EVM Blockchain Transaction** (Ethereum Network).
 4.  **Retry with Proof**: The agent re-sends the request, this time attaching a header `x-402-payment` containing the payment proof (Transaction Hash).
 5.  **Service Delivery**: The backend verifies the proof and returns the requested data.
 
@@ -28,9 +28,9 @@ Most AI agents hit a wall when they need paid data (weather, stocks, detailed se
 
 ---
 
-## 📐 System Architecture & Payment Flow
+## 📐 AgentPay Architecture & Payment Flow
 
-This diagram illustrates how **Agentx402** initializes liquidity, discovers tools, and handles the autonomous "402 Payment Required" loop.
+This diagram illustrates how **AgentPay** initializes liquidity (funding), discovers tools, and handles the autonomous "402 Payment Required" loop.
 
 ```mermaid
 sequenceDiagram
@@ -42,34 +42,36 @@ sequenceDiagram
     participant Market as Backend (Marketplace)
 
     Note over User, USDC: 1. Liquidity & Funding (Initialization)
-    User->>App: Input Private Key
+    User->>App: Input Private Key (Wallet Source)
     App->>Yellow: Initialize Erc20Service
+    Note right of Yellow: State Channel / Liquidity Setup
     Yellow->>USDC: getTokenBalance(UserAddress)
-    USDC-->>Yellow: 39.71 USDC
+    USDC-->>Yellow: 39.71 USDC (Available Liquidity)
     Yellow-->>App: Sync State (Balance Ready)
 
     Note over User, Market: 2. AI & Tool Discovery
     App->>Market: Fetch Available Tools
     Market-->>App: Return Tools + Pricing
+    Note right of App: AI Agent ready for queries
 
     Note over User, Market: 3. Autonomous 402 Loop
     User->>App: "Find weather in London"
     App->>Market: POST /tools/get_weather
     Market-->>App: 402 Payment Required (0.04 USDC)
     
-    App->>Yellow: 1. Try Yellow Payment (Off-Chain)
-    alt High Liquidity Strategy
+    App->>Yellow: 1. Process Access Payment
+    alt Yellow Network High Liquidity (State Channel)
         Yellow->>USDC: checkAllowance(Market)
         Yellow->>USDC: approve(Market, 0.04)
-        Yellow-->>App: Payment Proof (Instant)
+        Yellow-->>App: Payment Proof (Instant Signature)
     else fallback
-        App->>App: EVM On-Chain Transfer
+        App->>App: Standard EVM On-Chain Transfer
     end
 
     App->>Market: Retry POST /tools/get_weather + x-402-payment
-    Market->>Market: Verify Proof
+    Market->>Market: Verify Payment Proof
     Market-->>App: 200 OK + Data
-    App-->>User: Result Delivered
+    App-->>User: Result Delivered (Weather Info)
 ```
 
 ### 🛠 Yellow Network SDK Integration
@@ -97,7 +99,7 @@ The application uses the **NitroLite SDK** to bridge AI agents with high-speed d
     *   `src/services/groqService.js`: The central orchestrator. It manages the AI context, tool selection, and the "402 Loop" (Request -> Pay -> Retry).
     *   `src/services/yellowService.js`: A dedicated wrapper for the **NitroLite SDK**. It handles:
         *   Initialization with the Yellow Network Facilitator.
-        *   Managing the State Channel (Deposit/Withdraw).
+        *   Accessing the User's Wallet Liquidity.
         *   Executing off-chain payments and generating cryptographic signatures.
 
 ### 2. Backend (The Marketplace)
@@ -111,7 +113,7 @@ The application uses the **NitroLite SDK** to bridge AI agents with high-speed d
 ## 🛠 Project Structure
 
 ```
-Agentx402/
+AgentPay/
 ├── frontend/                 # React Application
 │   ├── src/
 │   │   ├── services/
