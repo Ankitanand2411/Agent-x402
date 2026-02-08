@@ -26,7 +26,7 @@ app.use(express.json());
 
 // Enable CORS for frontend
 app.use(cors({
-    origin: ['http://localhost:5174', 'http://localhost:5173', "*"],
+    origin: ['http://localhost:5174', 'http://localhost:5173', "https://agent-x402.vercel.app", "*"],
     credentials: true
 }));
 
@@ -641,12 +641,14 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok", message: "MCP Tool Server is running (Base Sepolia/EVM - Manual 402)" });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log(`🚀 MCP Tool Server running on http://localhost:${PORT}`);
-    console.log(`📍 Tool endpoint: POST http://localhost:${PORT}/tools/{tool_name}`);
+    console.log(`🚀 MCP Tool Server running on port ${PORT}`);
+    console.log(`📍 Tool endpoint: POST /tools/{tool_name}`);
     console.log(`💰 Payment Network: Sepolia (EVM)`);
     console.log(`💵 Payment Token: USDC`);
-    console.log(`📝 Marketplace: GET http://localhost:${PORT}/tools`);
+    console.log(`📝 Marketplace: GET /tools`);
     console.log(`⚡ Payment Mode: Manual 402 (no middleware)`);
 });
+
