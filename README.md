@@ -30,36 +30,46 @@ Most AI agents hit a wall when they need paid data (weather, stocks, detailed se
 
 ## 📐 System Architecture & Payment Flow
 
-This diagram illustrates how **Agentx402** handles the autonomous "402 Payment Required" loop, prioritizing the **Yellow Network** for instant settlement.
+This diagram illustrates how **Agentx402** initializes liquidity, discovers tools, and handles the autonomous "402 Payment Required" loop.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant User
-    participant Agent as Agent (Groq LLM)
     participant App as Frontend (React)
-    participant Yellow as Yellow Network (NitroLite)
+    participant Yellow as Yellow Network (SDK)
+    participant USDC as USDC Contract (On-Chain)
     participant Market as Backend (Marketplace)
 
-    User->>Agent: "Check weather in London"
-    Agent->>App: Select Tool: get_weather
+    Note over User, USDC: 1. Liquidity & Funding (Initialization)
+    User->>App: Input Private Key
+    App->>Yellow: Initialize Erc20Service
+    Yellow->>USDC: getTokenBalance(UserAddress)
+    USDC-->>Yellow: 39.71 USDC
+    Yellow-->>App: Sync State (Balance Ready)
+
+    Note over User, Market: 2. AI & Tool Discovery
+    App->>Market: Fetch Available Tools
+    Market-->>App: Return Tools + Pricing
+
+    Note over User, Market: 3. Autonomous 402 Loop
+    User->>App: "Find weather in London"
     App->>Market: POST /tools/get_weather
-    Market-->>App: 402 Payment Required (Price: 0.04 USDC)
+    Market-->>App: 402 Payment Required (0.04 USDC)
     
-    Note over App, Yellow: Autonomous Payment Logic
     App->>Yellow: 1. Try Yellow Payment (Off-Chain)
-    alt Yellow Success
-        Yellow-->>App: Payment Signature (Instant)
-    else Yellow Failure
-        App->>App: 2. Fallback to EVM Transaction (On-Chain)
-        Note right of App: Standard viem transfer
+    alt High Liquidity Strategy
+        Yellow->>USDC: checkAllowance(Market)
+        Yellow->>USDC: approve(Market, 0.04)
+        Yellow-->>App: Payment Proof (Instant)
+    else fallback
+        App->>App: EVM On-Chain Transfer
     end
 
-    App->>Market: Retry POST /tools/get_weather + x-402-payment header
-    Market->>Market: Verify Payment Proof
-    Market-->>App: 200 OK + Weather Data
-    App-->>Agent: Tool Response
-    Agent-->>User: "It's raining in London..."
+    App->>Market: Retry POST /tools/get_weather + x-402-payment
+    Market->>Market: Verify Proof
+    Market-->>App: 200 OK + Data
+    App-->>User: Result Delivered
 ```
 
 ### 🛠 Yellow Network SDK Integration
