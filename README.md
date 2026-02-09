@@ -26,6 +26,10 @@ Most AI agents hit a wall when they need paid data (weather, stocks, detailed se
 > 
 > All token interactions go through the Yellow Network SDK, demonstrating genuine integration with the Yellow ecosystem.
 
+###🎥 Demo Video
+
+https://youtu.be/CIMx5V42WfQ
+
 ---
 
 ## 📐 AgentPay Architecture & Payment Flow
